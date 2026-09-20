@@ -3,18 +3,70 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Unreasonably Free Trolley</title>
+<title>If Keith had AI at high school</title>
+<meta name="description" content="Small interactive builds revisiting the bits of 1980s Scottish school that never made sense. One thing I never understood, one small app, no sign-in.">
 <style>
-  body { margin: 0; background: #f6f3ec; color: #1d1b16; font: 17px/1.55 Georgia, serif; }
-  main { max-width: 680px; margin: 0 auto; padding: 56px 16px; }
-  a { color: #c8452b; }
+  :root {
+    --bg: #f6f3ec;
+    --ink: #1d1b16;
+    --muted: #6b665a;
+    --line: #dcd6c8;
+    --card: #fffdf8;
+    --accent: #c8452b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17160f; --ink: #ece7da; --muted: #a39d8e; --line: #33301f; --card: #201e14; --accent: #ff7a5c;
+    }
+  }
+  :root[data-theme="dark"] { --bg: #17160f; --ink: #ece7da; --muted: #a39d8e; --line: #33301f; --card: #201e14; --accent: #ff7a5c; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.55 Georgia, "Times New Roman", serif;
+  }
+  main { max-width: 680px; margin: 0 auto; padding: 56px 16px 80px; }
+  h1 { font-size: clamp(30px, 6vw, 44px); line-height: 1.1; margin: 0 0 12px; letter-spacing: -0.01em; }
+  .lede { color: var(--muted); font-size: 19px; margin: 0 0 40px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 40px 0 12px; font-family: system-ui, sans-serif; font-weight: 600; }
+  .card {
+    display: block; background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; text-decoration: none; color: inherit; margin-bottom: 12px;
+  }
+  a.card:hover { border-color: var(--accent); }
+  .card .n { font-family: system-ui, sans-serif; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
+  .card h3 { margin: 4px 0 6px; font-size: 21px; }
+  .card p { margin: 0; color: var(--muted); }
+  .tag { display: inline-block; font-family: system-ui, sans-serif; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-top: 10px; }
+  .tag.live { border-color: var(--accent); color: var(--accent); }
+  .soon { opacity: 0.6; }
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 15px; }
+  footer a { color: var(--accent); }
 </style>
 </head>
 <body>
 <main>
-  <p><a href="../">← All experiments</a></p>
-  <h1>The Unreasonably Free Trolley</h1>
-  <p>Still being built. The beans are in the trolley; the physics is on its way.</p>
+  <h1>If Keith had AI at high school</h1>
+  <p class="lede">School and I never really saw eye to eye. These are small things I can mess about with, each built to understand one idea that never landed the first time round. No sign-in, works on a phone.</p>
+
+  <h2>Physics</h2>
+  <a class="card" href="trolley/">
+    <div class="n">EXPERIMENT 1</div>
+    <h3>The Unreasonably Free Trolley</h3>
+    <p>A supermarket trolley, an unreasonable quantity of beans, and the question of what happens after you let go.</p>
+    <span class="tag">In progress</span>
+  </a>
+  <div class="card soon">
+    <div class="n">EXPERIMENT 2</div>
+    <h3>Late for the Bus</h3>
+    <p>Walk, wait, sprint, and watch the graphs tell the story.</p>
+    <span class="tag">Coming soon</span>
+  </div>
+
+  <footer>
+    Built with AI as the building partner. The apps contain no AI.
+    Follow along on <a href="https://www.linkedin.com/">LinkedIn</a>.
+  </footer>
 </main>
 </body>
 </html>
