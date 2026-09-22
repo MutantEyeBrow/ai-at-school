@@ -4,17 +4,527 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Unreasonably Free Trolley</title>
+<meta name="description" content="Push a supermarket trolley full of peanut butter across a Livingston car park, let go, and find out what actually happens. A small experiment in resultant force.">
 <style>
-  body { margin: 0; background: #f6f3ec; color: #1d1b16; font: 17px/1.55 Georgia, serif; }
-  main { max-width: 680px; margin: 0 auto; padding: 56px 16px; }
-  a { color: #c8452b; }
+  :root {
+    --bg: #f6f3ec; --ink: #1d1b16; --muted: #6b665a; --line: #dcd6c8; --card: #fffdf8;
+    --accent: #c8452b; --cool: #2f6f9f; --ok: #2e7d4f; --grid: #ebe6da;
+    --sky: #e9eef2; --tarmac: #b9b5ad; --tarmac2: #aeaaa2; --pb: #b9772f; --pblid: #4a2e14;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17160f; --ink: #ece7da; --muted: #a39d8e; --line: #33301f; --card: #201e14;
+      --accent: #ff7a5c; --cool: #6fb0e0; --ok: #6fc48f; --grid: #2a2818;
+      --sky: #22262c; --tarmac: #4a4842; --tarmac2: #403e38; --pb: #c98a44; --pblid: #2b1a0a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.5 Georgia, "Times New Roman", serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
+  .sys { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  a { color: var(--accent); }
+  .back { font-size: 15px; text-decoration: none; }
+  h1 { font-size: clamp(28px, 6vw, 40px); line-height: 1.1; margin: 8px 0 6px; letter-spacing: -0.01em; }
+  .lede { color: var(--muted); margin: 0 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 14px 0; }
+  .step { font-family: system-ui, sans-serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 0 0 6px; }
+  .card h2 { font-size: 21px; margin: 0 0 8px; }
+  .card p { margin: 6px 0; }
+  .options { display: grid; gap: 8px; margin-top: 10px; }
+  .opt { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: var(--bg); }
+  .opt input { margin-top: 5px; }
+  .opt.locked { cursor: default; opacity: 0.8; }
+  .opt.chosen { border-color: var(--accent); }
+  canvas { display: block; width: 100%; }
+  #scene { border-radius: 10px; border: 1px solid var(--line); background: var(--sky); touch-action: pan-y; }
+  .readouts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0 4px; }
+  .ro { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .ro .k { font-family: system-ui, sans-serif; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .ro .v { font-family: system-ui, sans-serif; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .ro .u { font-size: 12px; color: var(--muted); font-weight: 400; }
+  @media (max-width: 480px) { .readouts { grid-template-columns: repeat(2, 1fr); } .ro .v { font-size: 18px; } }
+  .ctl { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
+  .ctl label { display: block; }
+  .ctl .lab { display: flex; justify-content: space-between; font-family: system-ui, sans-serif; font-size: 14px; margin-bottom: 4px; }
+  .ctl .lab b { font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  button { font-family: system-ui, sans-serif; font-size: 16px; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  button.wil { border-style: dashed; }
+  .toggle { display: flex; align-items: center; gap: 8px; font-family: system-ui, sans-serif; font-size: 14px; }
+  .toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .note { font-family: system-ui, sans-serif; font-size: 14px; color: var(--muted); }
+  .msg { margin-top: 10px; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 0 8px 8px 0; font-size: 16px; }
+  .hidden { display: none; }
+  .receipt { font-family: "Courier New", ui-monospace, monospace; font-size: 13.5px; line-height: 1.5; background: var(--card); border: 1px dashed var(--line); border-radius: 4px; padding: 10px 14px; margin: 10px 0 4px; color: var(--ink); }
+  .receipt .hd { text-align: center; letter-spacing: 0.08em; color: var(--muted); font-size: 12px; }
+  .receipt .ln { display: flex; justify-content: space-between; gap: 8px; white-space: nowrap; }
+  .receipt .ln .l { overflow: hidden; }
+  .receipt .ln .r { font-variant-numeric: tabular-nums; }
+  .receipt .sub { color: var(--muted); font-size: 12px; padding-left: 12px; }
+  .receipt .rule { border-top: 1px dashed var(--line); margin: 4px 0; }
+  .receipt .tot { font-weight: 700; }
+  .receipt .law { text-align: center; color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .receipt .neg { color: var(--cool); } .receipt .pos { color: var(--accent); }
+  #graph { border-radius: 10px; border: 1px solid var(--line); background: var(--card); touch-action: pan-y; }
+  .gcap { display: flex; justify-content: space-between; font-family: system-ui, sans-serif; font-size: 13px; color: var(--muted); margin: 6px 2px 0; }
+  .diagrams { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  @media (max-width: 480px) { .diagrams { grid-template-columns: 1fr; } }
+  .dia { border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--bg); cursor: pointer; text-align: center; font-family: system-ui, sans-serif; font-size: 14px; }
+  .dia svg { width: 100%; height: 70px; display: block; margin-bottom: 4px; }
+  .dia.right { border-color: var(--ok); }
+  .dia.wrong { border-color: var(--accent); }
+  .dia .arrow { stroke: var(--accent); stroke-width: 3; fill: none; }
+  .dia .arrowb { stroke: var(--cool); stroke-width: 3; fill: none; }
+  .dia .box { fill: none; stroke: var(--ink); stroke-width: 2; }
+  details { margin-top: 8px; }
+  summary { cursor: pointer; font-family: system-ui, sans-serif; font-size: 15px; }
+  details ul { margin: 8px 0 0; padding-left: 20px; }
+  details li { margin: 4px 0; font-size: 15px; }
+  footer { margin-top: 32px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 14px; }
 </style>
 </head>
 <body>
 <main>
-  <p><a href="../">← All experiments</a></p>
+  <a class="back sys" href="../">← All experiments</a>
   <h1>The Unreasonably Free Trolley</h1>
-  <p>Still being built. The beans are in the trolley; the physics is on its way.</p>
+  <p class="lede">A supermarket trolley, a Livingston car park, and an unreasonable quantity of peanut butter. You push, you let go, and you find out what actually happens next.</p>
+
+  <section class="card" id="predictCard">
+    <div class="step">Step 1 — Predict</div>
+    <h2>Imagine a perfectly smooth, level car park. No friction at all.</h2>
+    <p>You push the trolley for two seconds and let go. After you let go, the trolley will…</p>
+    <div class="options" id="predOpts">
+      <label class="opt"><input type="radio" name="pred" value="stop"><span>Stop almost immediately. Nothing's pushing it any more.</span></label>
+      <label class="opt"><input type="radio" name="pred" value="slow"><span>Slow down gradually as the push wears off.</span></label>
+      <label class="opt"><input type="radio" name="pred" value="same"><span>Keep going at the same speed, forever, until something stops it.</span></label>
+    </div>
+    <p class="note" id="predNote">Pick one before you push. Be honest — teenage me would have picked the second one.</p>
+  </section>
+
+  <section class="card">
+    <div class="step">Step 2 — Push it and see</div>
+    <canvas id="scene" data-h="260"></canvas>
+    <div class="readouts">
+      <div class="ro"><div class="k">Mass</div><div class="v"><span id="roMass">20</span> <span class="u">kg</span></div></div>
+      <div class="ro"><div class="k">Resultant force</div><div class="v"><span id="roF">0</span> <span class="u">N</span></div></div>
+      <div class="ro"><div class="k">Acceleration</div><div class="v"><span id="roA">0.00</span> <span class="u">m/s²</span></div></div>
+      <div class="ro"><div class="k">Speed</div><div class="v"><span id="roV">0.00</span> <span class="u">m/s</span></div></div>
+    </div>
+
+    <div class="receipt" id="receipt" aria-live="off">
+      <div class="hd">LIVINGSTON CAR PARK · TILL 3</div>
+      <div class="hd">*** FORCES ON TROLLEY ***</div>
+      <div class="ln"><span class="l">push</span><span class="r pos" id="rcPush">+0 N</span></div>
+      <div class="ln"><span class="l">rolling resistance</span><span class="r neg" id="rcFric">−0 N</span></div>
+      <div class="sub" id="rcFricSub">friction off</div>
+      <div class="ln hidden" id="rcWilLn"><span class="l">trolley wilfulness</span><span class="r">0 N</span></div>
+      <div class="rule"></div>
+      <div class="ln tot"><span class="l">RESULTANT FORCE</span><span class="r" id="rcNet">0 N</span></div>
+      <div class="ln"><span class="l">÷ mass</span><span class="r" id="rcMass">50 kg</span></div>
+      <div class="rule"></div>
+      <div class="ln tot"><span class="l">= ACCELERATION</span><span class="r" id="rcA">0.00 m/s²</span></div>
+      <div class="law">F = m × a &nbsp;·&nbsp; so a = F ÷ m &nbsp;·&nbsp; Newton's second law, itemised</div>
+      <div class="law" id="rcNote">no resultant force, no change in speed — not the same as no speed</div>
+    </div>
+
+    <div class="ctl">
+      <label>
+        <div class="lab"><span>Tubs of peanut butter (1 kg each, trolley is 20 kg)</span><b><span id="tubsVal">30</span></b></div>
+        <input type="range" id="tubs" min="0" max="150" value="30">
+      </label>
+      <label>
+        <div class="lab"><span>Push force (applied for 2 s)</span><b><span id="forceVal">50</span> N</b></div>
+        <input type="range" id="force" min="0" max="200" value="50" step="5">
+      </label>
+      <div>
+        <div class="lab"><span class="toggle"><input type="checkbox" id="fricOn"> <span>Friction (rolling resistance)</span></span><b><span id="fricVal">0</span> N</b></div>
+        <input type="range" id="mu" min="0.005" max="0.05" step="0.005" value="0.02" disabled>
+        <div class="note">Smooth tarmac on the left, gravel on the right. It scales with mass — a heavier trolley drags more.</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <button class="primary" id="pushBtn">Push</button>
+      <button id="resetBtn">Reset</button>
+      <button class="wil" id="wilBtn" title="Apply the mysterious force of trolley wilfulness">Trolley wilfulness</button>
+    </div>
+    <div class="msg hidden" id="msg"></div>
+  </section>
+
+  <section class="card">
+    <div class="step">Speed against time</div>
+    <canvas id="graph" data-h="200"></canvas>
+    <div class="gcap"><span>Shaded = while you're pushing</span><span>Slope = acceleration</span></div>
+  </section>
+
+  <section class="card hidden" id="resultCard">
+    <div class="step">What happened</div>
+    <h2 id="resultH"></h2>
+    <p id="resultP"></p>
+  </section>
+
+  <section class="card hidden" id="checkCard">
+    <div class="step">Step 3 — A quick check</div>
+    <h2>Frictionless. Nobody's touching it. Steady speed. Which picture of the horizontal forces is right?</h2>
+    <div class="diagrams">
+      <div class="dia" data-ans="A">
+        <svg viewBox="0 0 120 70"><rect class="box" x="35" y="25" width="50" height="28" rx="3"/><path class="arrow" d="M5 39 H30 M24 33 L30 39 L24 45"/></svg>
+        A forward force keeps it going
+      </div>
+      <div class="dia" data-ans="B">
+        <svg viewBox="0 0 120 70"><rect class="box" x="35" y="25" width="50" height="28" rx="3"/></svg>
+        No horizontal forces at all
+      </div>
+      <div class="dia" data-ans="C">
+        <svg viewBox="0 0 120 70"><rect class="box" x="35" y="25" width="50" height="28" rx="3"/><path class="arrow" d="M5 39 H30 M24 33 L30 39 L24 45"/><path class="arrowb" d="M115 39 H90 M96 33 L90 39 L96 45"/></svg>
+        Forward and backward, balanced
+      </div>
+    </div>
+    <p id="checkP" class="note"></p>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>What this simulation simplifies (and why that's fine)</summary>
+      <ul>
+        <li>The trolley is a point mass on a straight, level line. No wobbly wheel, no steering, no turning over.</li>
+        <li>Friction is a single constant rolling-resistance force, μ × mass × g, that only acts while the trolley is moving and always opposes the motion. Real friction is messier; the principle is the same.</li>
+        <li>The push is a constant force for exactly two seconds. Real pushes ramp up and down.</li>
+        <li>No air resistance. At trolley speeds it's small anyway.</li>
+        <li>Acceleration is always resultant force ÷ mass. That part is not simplified.</li>
+        <li>No collisions with kerbs, cars, or abandoned shopping lists. Peanut butter does not shift in the trolley.</li>
+      </ul>
+    </details>
+  </section>
+
+  <footer>Part of <a href="../">If Keith had AI at high school</a>. Built with AI as the building partner; the app itself contains none.</footer>
 </main>
+
+<script>
+(function () {
+  'use strict';
+  const G = 9.81, TROLLEY_MASS = 20, PUSH_TIME = 2.0, DT = 1 / 240;
+  const $ = id => document.getElementById(id);
+  const els = {
+    scene: $('scene'), graph: $('graph'), tubs: $('tubs'), force: $('force'), fricOn: $('fricOn'), mu: $('mu'),
+    tubsVal: $('tubsVal'), forceVal: $('forceVal'), fricVal: $('fricVal'),
+    roMass: $('roMass'), roF: $('roF'), roA: $('roA'), roV: $('roV'),
+    pushBtn: $('pushBtn'), resetBtn: $('resetBtn'), wilBtn: $('wilBtn'), msg: $('msg'),
+    resultCard: $('resultCard'), resultH: $('resultH'), resultP: $('resultP'),
+    checkCard: $('checkCard'), checkP: $('checkP'), predNote: $('predNote')
+  };
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  // ---------- Simulation state (pure numbers; nothing here knows about pixels) ----------
+  const S = {
+    t: 0, x: 0, v: 0, a: 0, pushLeft: 0, running: false, released: false, releaseT: null, releaseV: 0,
+    fPush: 0, fFric: 0, fNet: 0, samples: [], settled: false, wilUntil: 0
+  };
+  const P = { mass: 50, force: 50, friction: false, mu: 0.02 };
+
+  function readParams() {
+    P.mass = TROLLEY_MASS + Number(els.tubs.value);
+    P.force = Number(els.force.value);
+    P.friction = els.fricOn.checked;
+    P.mu = Number(els.mu.value);
+    els.tubsVal.textContent = els.tubs.value;
+    els.forceVal.textContent = P.force;
+    els.mu.disabled = !P.friction;
+    els.fricVal.textContent = P.friction ? Math.round(P.mu * P.mass * G) : 0;
+    els.roMass.textContent = P.mass;
+  }
+
+  // One physics step. a = F_net / m, always. Friction only while moving, always opposing motion.
+  function step(dt) {
+    const pushing = S.pushLeft > 1e-6;
+    S.fPush = pushing ? P.force : 0;
+    const fricMag = P.friction ? P.mu * P.mass * G : 0;
+    if (S.v === 0) {
+      // At rest: friction resists the push up to its maximum, so the trolley only starts if the push wins.
+      S.fFric = Math.abs(S.fPush) <= fricMag ? -S.fPush : -Math.sign(S.fPush) * fricMag;
+    } else {
+      S.fFric = -Math.sign(S.v) * fricMag;
+    }
+    S.fNet = S.fPush + S.fFric;
+    S.a = S.fNet / P.mass;
+    const vNew = S.v + S.a * dt;
+    // Friction can stop the trolley but never reverse it.
+    if (fricMag > 0 && S.v !== 0 && Math.sign(vNew) !== Math.sign(S.v)) { S.v = 0; S.a = 0; S.fNet = 0; S.fFric = pushing ? -S.fPush : 0; }
+    else S.v = vNew;
+    S.x += S.v * dt;
+    S.t += dt;
+    if (pushing) { S.pushLeft -= dt; if (S.pushLeft <= 1e-6) { S.pushLeft = 0; S.released = true; S.releaseT = S.t; S.releaseV = S.v; } }
+  }
+
+  function advance(seconds) {
+    let n = Math.round(seconds / DT);
+    while (n-- > 0) {
+      step(DT);
+      const last = S.samples[S.samples.length - 1];
+      if (!last || S.t - last.t >= 1 / 60 - 1e-9) S.samples.push({ t: S.t, v: S.v, pushing: S.pushLeft > 0 });
+    }
+    checkSettled();
+  }
+
+  function checkSettled() {
+    if (S.settled || !S.released) return;
+    const sinceRelease = S.t - S.releaseT;
+    if (P.friction && S.v === 0) { S.settled = true; S.running = false; showResult('stopped', sinceRelease); }
+    else if (!P.friction && sinceRelease >= 4) { S.settled = true; showResult('constant', sinceRelease); }
+    else if (P.friction && sinceRelease >= 30) { S.settled = true; S.running = false; showResult('stopped-late', sinceRelease); }
+  }
+
+  // ---------- Prediction / results / check ----------
+  let prediction = null, predLocked = false;
+  document.querySelectorAll('input[name=pred]').forEach(r => r.addEventListener('change', () => {
+    prediction = r.value;
+    document.querySelectorAll('.opt').forEach(o => o.classList.toggle('chosen', o.querySelector('input').checked));
+  }));
+  function lockPrediction() {
+    if (predLocked) return; predLocked = true;
+    document.querySelectorAll('.opt').forEach(o => { o.classList.add('locked'); o.querySelector('input').disabled = true; });
+    els.predNote.textContent = prediction ? 'Prediction locked in. Now watch the graph.' : "No prediction made — fair enough, but it's more fun if you commit.";
+  }
+  const predText = { stop: 'stop almost immediately', slow: 'slow down as the push wore off', same: 'keep going at the same speed' };
+
+  function showResult(kind, since) {
+    const v = S.releaseV.toFixed(2);
+    let h, p;
+    if (kind === 'constant') {
+      h = `It's still doing ${v} m/s. It hasn't changed.`;
+      p = `Nothing is pushing it and nothing is dragging it back, so the resultant force is zero — and zero resultant force means zero acceleration. Not zero speed. Zero <em>change</em> in speed. That's Newton's first law, and it's the bit I never believed.`;
+      if (prediction === 'same') p += ' You called it.';
+      else if (prediction) p += ` You predicted it would ${predText[prediction]}. So did I, for about thirty years.`;
+      p += ' Now turn friction on and push again.';
+      els.checkCard.classList.remove('hidden');
+    } else {
+      h = `It stopped after ${since.toFixed(1)} s.`;
+      p = `But not because the push "ran out". From the moment you let go, ${Math.round(P.mu * P.mass * G)} N of rolling resistance was pushing <em>backwards</em>, the whole time. A backwards resultant force means a backwards acceleration — which, for something moving forwards, means slowing down. Look at the graph: a straight, sloping line, not a curve that fades out.`;
+      if (prediction === 'slow') p += ' Your prediction was for the frictionless case — did the same thing happen with friction off?';
+      p += ' Turn friction off and push again to see the difference.';
+    }
+    els.resultH.innerHTML = h; els.resultP.innerHTML = p;
+    els.resultCard.classList.remove('hidden');
+    els.resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  document.querySelectorAll('.dia').forEach(d => d.addEventListener('click', () => {
+    const a = d.dataset.ans;
+    document.querySelectorAll('.dia').forEach(x => x.classList.remove('right', 'wrong'));
+    d.classList.add(a === 'B' ? 'right' : 'wrong');
+    els.checkP.textContent = {
+      A: "That's the one most of us carry around: something must be pushing it or it would stop. But nobody is touching it. If there were a forward force, it would be speeding up.",
+      B: "Right. No horizontal forces, so no resultant force, so no acceleration — and the speed just stays what it was. Motion doesn't need a force. Changing motion does.",
+      C: "Balanced forces would also give a steady speed — that's what happens when you push a real trolley against friction at a constant pace. But in this run nothing is pushing forward and nothing is dragging back. Zero and zero is the simplest kind of balanced."
+    }[a];
+  }));
+
+  // ---------- Controls ----------
+  ['tubs', 'force', 'fricOn', 'mu'].forEach(id => els[id].addEventListener('input', () => { readParams(); draw(); }));
+  els.pushBtn.addEventListener('click', () => {
+    if (S.pushLeft > 0) return;
+    lockPrediction();
+    if (S.settled) { S.settled = false; S.released = false; S.releaseT = null; els.resultCard.classList.add('hidden'); }
+    S.pushLeft = PUSH_TIME; S.running = true;
+    hideMsg();
+  });
+  els.resetBtn.addEventListener('click', reset);
+  els.wilBtn.addEventListener('click', () => {
+    S.wilUntil = performance.now() + 3500;
+    showMsg("Applied the mysterious force of trolley wilfulness: <b>0 N</b>. It turns out there's no such force. Whatever the trolley is doing, it's doing because of the forces you can see — and only those.");
+  });
+  function showMsg(html) { els.msg.innerHTML = html; els.msg.classList.remove('hidden'); }
+  function hideMsg() { els.msg.classList.add('hidden'); }
+  function reset() {
+    Object.assign(S, { t: 0, x: 0, v: 0, a: 0, pushLeft: 0, running: false, released: false, releaseT: null, releaseV: 0, fPush: 0, fFric: 0, fNet: 0, samples: [], settled: false });
+    els.resultCard.classList.add('hidden'); hideMsg(); draw();
+  }
+
+  // ---------- Frame loop ----------
+  let lastNow = null, acc = 0;
+  function frame(now) {
+    if (lastNow !== null && S.running) {
+      acc += Math.min((now - lastNow) / 1000, 0.05);
+      const chunk = Math.floor(acc / DT) * DT;
+      if (chunk > 0) { advance(chunk); acc -= chunk; }
+    }
+    lastNow = now;
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- Drawing ----------
+  const PX_PER_M = 40;
+  function fitCanvas(c) {
+    const dpr = window.devicePixelRatio || 1, w = c.clientWidth, h = Number(c.dataset.h);
+    if (c.style.height !== h + 'px') c.style.height = h + 'px';
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return { ctx, w, h };
+  }
+
+  function drawScene() {
+    const { ctx, w, h } = fitCanvas(els.scene);
+    const groundY = h - 48, camX = S.x * PX_PER_M - w * 0.45;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = css('--sky'); ctx.fillRect(0, 0, w, h);
+    // Tarmac
+    ctx.fillStyle = css('--tarmac'); ctx.fillRect(0, groundY, w, h - groundY);
+    ctx.fillStyle = css('--tarmac2'); ctx.fillRect(0, groundY, w, 3);
+    // Parking bay lines every 3 m, lamp posts every 15 m — these scroll so you can see motion.
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 2;
+    const bay = 3 * PX_PER_M, first = Math.floor(camX / bay) * bay;
+    for (let gx = first; gx < camX + w + bay; gx += bay) { const sx = gx - camX; ctx.beginPath(); ctx.moveTo(sx, groundY + 8); ctx.lineTo(sx + 18, h - 8); ctx.stroke(); }
+    const lamp = 15 * PX_PER_M, firstL = Math.floor(camX / lamp) * lamp;
+    ctx.strokeStyle = css('--muted'); ctx.lineWidth = 3;
+    for (let gx = firstL; gx < camX + w + lamp; gx += lamp) { const sx = gx - camX; ctx.beginPath(); ctx.moveTo(sx, groundY); ctx.lineTo(sx, 30); ctx.lineTo(sx + 14, 30); ctx.stroke(); ctx.fillStyle = '#f4d35e'; ctx.fillRect(sx + 12, 28, 8, 5); }
+    // Distance markers
+    ctx.fillStyle = css('--muted'); ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'center';
+    const mk = 5 * PX_PER_M, firstM = Math.floor(camX / mk) * mk;
+    for (let gx = Math.max(0, firstM); gx < camX + w + mk; gx += mk) { const sx = gx - camX; ctx.fillText((gx / PX_PER_M) + ' m', sx, h - 5); }
+
+    // Trolley
+    const tx = S.x * PX_PER_M - camX, bw = 100, bh = 46, by = groundY - 14 - bh;
+    ctx.save();
+    ctx.translate(tx, 0);
+    // wheels
+    const wheelAngle = S.x / 0.06;
+    for (const wx of [-bw / 2 + 12, bw / 2 - 12]) {
+      ctx.fillStyle = css('--ink'); ctx.beginPath(); ctx.arc(wx, groundY - 7, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = css('--card'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(wx, groundY - 7); ctx.lineTo(wx + 5 * Math.cos(wheelAngle), groundY - 7 + 5 * Math.sin(wheelAngle)); ctx.stroke();
+    }
+    // peanut butter tubs: 10 per row, stacked up, past the top if you insist
+    const tubs = P.mass - TROLLEY_MASS, perRow = 10, tw = 9, th = 11;
+    for (let i = 0; i < tubs; i++) {
+      const r = Math.floor(i / perRow), c = i % perRow;
+      const px = -bw / 2 + 5 + c * tw + (r % 2 ? 3 : 0), py = by + bh - 4 - (r + 1) * th;
+      ctx.fillStyle = css('--pb'); ctx.fillRect(px, py + 3, tw - 2, th - 3);
+      ctx.fillStyle = css('--pblid'); ctx.fillRect(px, py, tw - 2, 3);
+    }
+    // basket (drawn after tubs so the mesh sits in front)
+    ctx.strokeStyle = css('--ink'); ctx.lineWidth = 2; ctx.beginPath();
+    ctx.moveTo(-bw / 2, by); ctx.lineTo(-bw / 2 + 8, by + bh); ctx.lineTo(bw / 2 - 4, by + bh); ctx.lineTo(bw / 2, by); ctx.closePath(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(29,27,22,0.25)'; ctx.lineWidth = 1;
+    for (let k = 1; k < 5; k++) { ctx.beginPath(); ctx.moveTo(-bw / 2 + k * 1.5, by + k * (bh / 5)); ctx.lineTo(bw / 2 - k * 0.8, by + k * (bh / 5)); ctx.stroke(); }
+    for (let k = 1; k < 8; k++) { const fx = -bw / 2 + k * (bw / 8); ctx.beginPath(); ctx.moveTo(fx, by); ctx.lineTo(fx + 1, by + bh); ctx.stroke(); }
+    // handle + legs
+    ctx.strokeStyle = css('--ink'); ctx.lineWidth = 3; ctx.beginPath();
+    ctx.moveTo(-bw / 2, by); ctx.lineTo(-bw / 2 - 16, by - 18); ctx.lineTo(-bw / 2 - 22, by - 18); ctx.stroke();
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-bw / 2 + 12, by + bh); ctx.lineTo(-bw / 2 + 12, groundY - 12); ctx.moveTo(bw / 2 - 12, by + bh); ctx.lineTo(bw / 2 - 12, groundY - 12); ctx.stroke();
+    if (tubs > 60) { const rows = Math.ceil(tubs / perRow); ctx.fillStyle = css('--muted'); ctx.font = 'italic 11px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(tubs > 120 ? 'structurally optimistic' : 'architecturally significant', 0, by + bh - 4 - rows * th - 6); }
+    ctx.restore();
+
+    // Force arrows. Push pushes on the back of the trolley; friction acts at the front, pointing back.
+    // Labels sit outside the trolley so they never cover the peanut butter. Scale: 1 N = 0.6 px, min 6 px.
+    const cy = by + bh / 2, scale = 0.4;
+    const arrow = ({ headX, tailX, F, y, color, label, dashed }) => {
+      if (Math.abs(F) < 0.5) return;
+      const L = Math.sign(F) * Math.max(6, Math.abs(F) * scale);
+      const tail = headX !== undefined ? headX - L : tailX, head = tail + L, d = Math.sign(L);
+      ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 3; if (dashed) ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(tail, y); ctx.lineTo(head, y); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(head, y); ctx.lineTo(head - d * 8, y - 5); ctx.lineTo(head - d * 8, y + 5); ctx.closePath(); ctx.fill();
+      ctx.font = '600 12px system-ui, sans-serif'; ctx.textAlign = 'left';
+      const tw = ctx.measureText(label).width;
+      let lx, ly;
+      if (headX !== undefined) { lx = d > 0 ? head - 2 - tw : head + 2; ly = y - 8; }
+      else { lx = d > 0 ? head + 6 : head - 6 - tw; ly = y + 4; }
+      lx = Math.max(4, Math.min(w - 4 - tw, lx));
+      ctx.fillText(label, lx, ly);
+      ctx.restore();
+    };
+    if (S.fPush) arrow({ headX: tx - bw / 2 - 24, F: S.fPush, y: cy + 4, color: css('--accent'), label: `push ${Math.round(S.fPush)} N` });
+    if (S.fFric) arrow({ headX: tx + bw / 2 + 2, F: S.fFric, y: cy + 4, color: css('--cool'), label: `friction ${Math.round(Math.abs(S.fFric))} N` });
+    if (performance.now() < S.wilUntil) arrow({ tailX: tx, F: 0.6, y: by - 30, color: css('--muted'), label: 'wilfulness 0 N', dashed: true });
+    // resultant, below the trolley on the tarmac
+    ctx.save(); ctx.font = '600 12px system-ui, sans-serif'; ctx.fillStyle = css('--ink'); ctx.textAlign = 'center';
+    if (Math.abs(S.fNet) >= 0.5) arrow({ tailX: tx, F: S.fNet, y: groundY + 18, color: css('--ink'), label: `resultant ${Math.round(Math.abs(S.fNet))} N` });
+    else ctx.fillText('resultant 0 N', tx, groundY + 22);
+    ctx.restore();
+    // release flash
+    if (S.released && S.t - S.releaseT < 1.2) { ctx.fillStyle = css('--accent'); ctx.font = '600 13px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('let go!', tx, by - 40); }
+  }
+
+  let hover = null;
+  function drawGraph() {
+    const { ctx, w, h } = fitCanvas(els.graph);
+    const m = { l: 44, r: 12, t: 12, b: 28 }, pw = w - m.l - m.r, ph = h - m.t - m.b;
+    ctx.clearRect(0, 0, w, h);
+    const tMax = Math.max(8, Math.ceil(S.t / 2) * 2);
+    let vMax = 1; for (const s of S.samples) vMax = Math.max(vMax, s.v); vMax = Math.ceil(vMax * 1.15 * 2) / 2;
+    const X = t => m.l + (t / tMax) * pw, Y = v => m.t + ph - (v / vMax) * ph;
+    // pushing band
+    ctx.fillStyle = 'rgba(200,69,43,0.08)';
+    let bandStart = null;
+    for (let i = 0; i < S.samples.length; i++) {
+      const s = S.samples[i];
+      if (s.pushing && bandStart === null) bandStart = s.t;
+      if ((!s.pushing || i === S.samples.length - 1) && bandStart !== null) { ctx.fillRect(X(bandStart), m.t, X(s.t) - X(bandStart), ph); bandStart = null; }
+    }
+    // grid + axes
+    ctx.strokeStyle = css('--grid'); ctx.lineWidth = 1; ctx.fillStyle = css('--muted'); ctx.font = '11px system-ui, sans-serif';
+    const vStep = vMax <= 2 ? 0.5 : vMax <= 5 ? 1 : vMax <= 12 ? 2 : 5;
+    for (let v = 0; v <= vMax + 1e-9; v += vStep) { ctx.beginPath(); ctx.moveTo(m.l, Y(v)); ctx.lineTo(w - m.r, Y(v)); ctx.stroke(); ctx.textAlign = 'right'; ctx.fillText(v.toFixed(vStep < 1 ? 1 : 0), m.l - 6, Y(v) + 4); }
+    const tStep = tMax <= 10 ? 1 : tMax <= 30 ? 5 : 10;
+    ctx.textAlign = 'center';
+    for (let t = 0; t <= tMax + 1e-9; t += tStep) { ctx.beginPath(); ctx.moveTo(X(t), m.t); ctx.lineTo(X(t), m.t + ph); ctx.stroke(); ctx.fillText(t + ' s', X(t), h - 10); }
+    ctx.save(); ctx.translate(12, m.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.fillText('m/s', 0, 0); ctx.restore();
+    ctx.strokeStyle = css('--line'); ctx.beginPath(); ctx.moveTo(m.l, m.t + ph); ctx.lineTo(w - m.r, m.t + ph); ctx.stroke();
+    // line
+    if (S.samples.length > 1) {
+      ctx.strokeStyle = css('--accent'); ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.beginPath();
+      S.samples.forEach((s, i) => i ? ctx.lineTo(X(s.t), Y(s.v)) : ctx.moveTo(X(s.t), Y(s.v)));
+      ctx.stroke();
+      const last = S.samples[S.samples.length - 1];
+      ctx.fillStyle = css('--accent'); ctx.beginPath(); ctx.arc(X(last.t), Y(last.v), 4, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = css('--card'); ctx.lineWidth = 2; ctx.stroke();
+    }
+    // hover crosshair
+    if (hover !== null && S.samples.length > 1) {
+      const tH = ((hover - m.l) / pw) * tMax;
+      let best = S.samples[0]; for (const s of S.samples) if (Math.abs(s.t - tH) < Math.abs(best.t - tH)) best = s;
+      if (best.t <= S.t) {
+        ctx.strokeStyle = css('--muted'); ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(X(best.t), m.t); ctx.lineTo(X(best.t), m.t + ph); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = css('--ink'); ctx.beginPath(); ctx.arc(X(best.t), Y(best.v), 4, 0, Math.PI * 2); ctx.fill();
+        const label = `${best.t.toFixed(1)} s · ${best.v.toFixed(2)} m/s`; ctx.font = '600 12px system-ui, sans-serif';
+        const tw = ctx.measureText(label).width + 12, lx = Math.min(Math.max(X(best.t) - tw / 2, m.l), w - m.r - tw), ly = m.t + 2;
+        ctx.fillStyle = css('--card'); ctx.strokeStyle = css('--line'); ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(lx, ly, tw, 20, 5); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = css('--ink'); ctx.textAlign = 'left'; ctx.fillText(label, lx + 6, ly + 14);
+      }
+    }
+  }
+  els.graph.addEventListener('pointermove', e => { const r = els.graph.getBoundingClientRect(); hover = e.clientX - r.left; });
+  els.graph.addEventListener('pointerleave', () => { hover = null; });
+
+  function draw() {
+    drawScene(); drawGraph();
+    els.roF.textContent = Math.round(S.fNet);
+    els.roA.textContent = S.a.toFixed(2);
+    els.roV.textContent = S.v.toFixed(2);
+    // the receipt
+    const fricMag = P.friction ? P.mu * P.mass * G : 0, sgn = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toFixed(1) + ' N';
+    $('rcPush').textContent = sgn(S.fPush);
+    $('rcFric').textContent = sgn(S.fFric);
+    $('rcFricSub').textContent = P.friction ? `μ ${P.mu.toFixed(3)} × ${P.mass} kg × 9.81 = ${fricMag.toFixed(1)} N, opposing motion` : 'friction off';
+    $('rcWilLn').classList.toggle('hidden', performance.now() >= S.wilUntil);
+    $('rcNet').textContent = sgn(S.fNet);
+    $('rcMass').textContent = `${P.mass} kg`;
+    $('rcA').textContent = `${S.a >= 0 ? '' : '−'}${Math.abs(S.a).toFixed(2)} m/s²`;
+    $('rcNote').textContent = S.pushLeft > 0 ? 'positive resultant → speeding up' : (S.fNet < -0.5 && S.v > 0) ? 'negative resultant → slowing down' : (S.v > 0 ? 'no resultant force, no change in speed — not the same as no speed' : 'no resultant force, no motion — yet');
+    els.pushBtn.disabled = S.pushLeft > 0;
+    els.pushBtn.textContent = S.pushLeft > 0 ? 'Pushing…' : (S.released || S.v > 0 ? 'Push again' : 'Push');
+  }
+
+  // Expose for testing: deterministic stepping with no animation involved.
+  window.trolley = { S, P, advance, reset, readParams, DT, PUSH_TIME, TROLLEY_MASS, G,
+    push() { S.pushLeft = PUSH_TIME; S.running = true; }, setRunning(r) { S.running = r; } };
+
+  readParams(); draw();
+  window.addEventListener('resize', draw);
+  requestAnimationFrame(frame);
+})();
+</script>
 </body>
 </html>
